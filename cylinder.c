@@ -56,6 +56,7 @@ void render(float A){
 
             int idx = (int)((luminance + 1)*5.5); // move o intervalo de [-1, 1] para [0, 2]
                                                   // multiplica por 5.5 ja que temos 11 opções de iluminação
+            
             int point = xp + SCREEN_WIDHT * yp;
             if(SCREEN_HEIGHT > yp && yp > 0 && SCREEN_WIDHT > xp && xp > 0 && D > z_buffer[point]){
                 z_buffer[point] = D;
