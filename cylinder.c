@@ -63,9 +63,7 @@ void render(float A){
                 buffer[point] = lightPoint[idx > 0 ? idx > 11 ? 11 : idx : 0];
             }     
         }
-
     }
-
 }
 
 int main(){
@@ -79,6 +77,5 @@ int main(){
         }
         A += ROTATION_ANGLE;
         usleep(30000);
-
     }
 }
