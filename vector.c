@@ -1,19 +1,34 @@
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
-#include <unistd.h>
+
+#ifndef _WIN32
+    #include <unistd.h>
+#else
+    #include <windows.h>
+    void usleep(__int64 usec)
+    {
+    HANDLE timer;
+    LARGE_INTEGER ft;
+
+    ft.QuadPart = -(10 * usec); // Convert to 100 nanosecond interval, negative value indicates relative time
+
+    timer = CreateWaitableTimer(NULL, TRUE, NULL);
+    SetWaitableTimer(timer, &ft, 0, NULL, NULL, 0);
+    WaitForSingleObject(timer, INFINITE);
+    CloseHandle(timer);
+    }
+#endif
 
 #define SCREEN_WIDTH  40
 #define SCREEN_HEIGHT 20
-#define BUFFER_SIZE (SCREEN_WIDTH * SCREEN_HEIGHT)
-
-#define reset_cursor()    printf("\033[H")
-#define hidden_cursor()   printf("\033[?25l")
-
-#define CENTER_X (SCREEN_WIDTH / 2)
-#define CENTER_Y (SCREEN_HEIGHT / 2)
+#define BUFFER_SIZE SCREEN_WIDTH * SCREEN_HEIGHT
+#define CENTER_X SCREEN_WIDTH / 2
+#define CENTER_Y SCREEN_HEIGHT / 2
 
 #define norm(x, y) (sqrt((x) * (x) + (y) * (y)))
+#define reset_cursor()    printf("\033[H")
+#define hidden_cursor()   printf("\033[?25l")
 
 // um vetor 2D pode ser representado pela conexão entre 2 pontos em um plano cartesiano
 

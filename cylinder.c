@@ -1,7 +1,24 @@
 #include <stdio.h> 
 #include <string.h>
 #include <math.h>
-#include <unistd.h>
+
+#ifndef _WIN32
+    #include <unistd.h>
+#else
+    #include <windows.h>
+
+    void usleep(__int64 usec) {
+        HANDLE timer;
+        LARGE_INTEGER ft;
+
+        ft.QuadPart = -(10 * usec); // Convert to 100 nanosecond interval, negative value indicates relative time
+
+        timer = CreateWaitableTimer(NULL, TRUE, NULL);
+        SetWaitableTimer(timer, &ft, 0, NULL, NULL, 0);
+        WaitForSingleObject(timer, INFINITE);
+        CloseHandle(timer);
+    }
+#endif
 
 #define LENGHT         5
 #define RADIUS         2
@@ -16,7 +33,8 @@
 #define CylinderY(theta) RADIUS * sin(theta)
 
 #define reset_cursor()    printf("\033[H")
-#define hidden_cursor()   printf("\033[?25l")
+#define hide_cursor()   printf("\033[?25l")
+#define reveals_cursor()   printf("\033[?25h") // executar esse comando solto faz o cursor apareceu novamente
 
 float ld[] = {0, 1, -1};// light direction
 const char lightPoint[] = ".,-~:;=!*#$@";
@@ -68,7 +86,7 @@ void render(float A){
 
 int main(){
     float A = 0;
-    hidden_cursor();
+    hide_cursor();
     while(1){
         reset_cursor();
         render(A);
