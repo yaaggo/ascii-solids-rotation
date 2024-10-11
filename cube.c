@@ -33,7 +33,29 @@
 #define reset_cursor()    printf("\033[H")
 #define hide_cursor()   printf("\033[?25l")
 #define reveals_cursor()   printf("\033[?25h")
+
 #define norm(x, y, z) (sqrt((x) * (x) + (y) * (y) + (z) * (z)))
+
+#define ROTATE_X(i, j, k, A) do {            \
+    float temp_j = (j) * cos(A) - (k) * sin(A);  \
+    float temp_k = (j) * sin(A) + (k) * cos(A);  \
+    (j) = temp_j;                              \
+    (k) = temp_k;                              \
+} while(0)
+
+#define ROTATE_Y(i, j, k, A) do {            \
+    float temp_i = (i) * cos(A) + (k) * sin(A);  \
+    float temp_k = -(i) * sin(A) + (k) * cos(A); \
+    (i) = temp_i;                              \
+    (k) = temp_k;                              \
+} while(0)
+
+#define ROTATE_Z(i, j, k, A) do {            \
+    float temp_i = (i) * cos(A) - (j) * sin(A);  \
+    float temp_j = (i) * sin(A) + (j) * cos(A);  \
+    (i) = temp_i;                              \
+    (j) = temp_j;                              \
+} while(0)
 
 const char lightPoint[] = ".,-~:;=!*#$@";
 char    buffer[BUFFER_SIZE];
@@ -42,33 +64,10 @@ float z_buffer[BUFFER_SIZE];
 float ld[3] = {-1, -1, -1};// light direction
 float A1 = 0, A2 = 0, A3 = 0;
 
-
-
-void r_xaxis(float *i, float *j, float *k, float A){
-    float temp_j = (*j) * cos(A) - (*k) * sin(A);
-    float temp_k = (*j) * sin(A) + (*k) * cos(A); 
-    *j = temp_j;
-    *k = temp_k;
-}
-
-void r_yaxis(float *i, float *j, float *k, float A){
-    float temp_i = (*i) * cos(A) + (*k) * sin(A);
-    float temp_k = -(*i) * sin(A) + (*k) * cos(A);
-    *i = temp_i;
-    *k = temp_k;
-}
-
-void r_zaxis(float *i, float *j, float *k, float A){
-    float temp_i = (*i) * cos(A) - (*j) * sin(A);
-    float temp_j = (*i) * sin(A) + (*j) * cos(A);
-    *i = temp_i;
-    *j = temp_j;
-}
-
 void surface(float x, float y, float z, int n){
-    r_xaxis(&x, &y, &z, A1);
-    //r_yaxis(&x, &y, &z, A2);
-    r_zaxis(&x, &y, &z, A3);
+    ROTATE_X(x, y, z, A1);
+    ROTATE_Z(x, y, z, A2);
+    ROTATE_Z(x, y, z, A3);
 
     float D = 1.0 / (z + CAM_DISTANCE);
     float xp = (int)(SCREEN_WIDHT/2.0 + SCALE * D * x); // se quiser colocar um deslocamento horizontal, so somar um valor a mais aqui

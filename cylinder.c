@@ -25,56 +25,92 @@
 #define THETA_SPACING  0.02
 #define ROTATION_ANGLE 0.03
 #define CAM_DISTANCE   5
-#define SCREEN_WIDHT   80
-#define SCREEN_HEIGHT  24
+#define SCREEN_WIDHT   160
+#define SCREEN_HEIGHT  44
 #define SCALE          30
 
-#define CylinderX(theta) RADIUS * cos(theta)
-#define CylinderY(theta) RADIUS * sin(theta)
+#define BUFFER_SIZE    SCREEN_WIDHT *  SCREEN_HEIGHT
 
 #define reset_cursor()    printf("\033[H")
 #define hide_cursor()   printf("\033[?25l")
 #define reveals_cursor()   printf("\033[?25h") // executar esse comando solto faz o cursor apareceu novamente
 
+#define CylinderX(theta) RADIUS * cos(theta)
+#define CylinderY(theta) RADIUS * sin(theta)
+
+#define norm(x, y, z) (sqrt((x) * (x) + (y) * (y) + (z) * (z)))
+
+#define ROTATE_X(i, j, k, A) do {            \
+    float temp_j = (j) * cos(A) - (k) * sin(A);  \
+    float temp_k = (j) * sin(A) + (k) * cos(A);  \
+    (j) = temp_j;                              \
+    (k) = temp_k;                              \
+} while(0)
+
+#define ROTATE_Y(i, j, k, A) do {            \
+    float temp_i = (i) * cos(A) + (k) * sin(A);  \
+    float temp_k = -(i) * sin(A) + (k) * cos(A); \
+    (i) = temp_i;                              \
+    (k) = temp_k;                              \
+} while(0)
+
+#define ROTATE_Z(i, j, k, A) do {            \
+    float temp_i = (i) * cos(A) - (j) * sin(A);  \
+    float temp_j = (i) * sin(A) + (j) * cos(A);  \
+    (i) = temp_i;                              \
+    (j) = temp_j;                              \
+} while(0)
+
+char lightPoint[] = ".,-~:;=!*#$@";
+char buffer[BUFFER_SIZE];
+float z_buffer[BUFFER_SIZE];
 float ld[] = {0, 1, -1};// light direction
-const char lightPoint[] = ".,-~:;=!*#$@";
 
-char buffer[1760];
-float z_buffer[1760];
-
-void render(float A){
-    memset(buffer, ' ', sizeof(char) * 1760);
-    memset(z_buffer, 0, sizeof(float) * 1760);
+void render(float A1, float A2, float A3){
+    memset(buffer, ' ', sizeof(char) * BUFFER_SIZE);
+    memset(z_buffer, 0, sizeof(float) * BUFFER_SIZE);
 
     for(float theta = 0; theta < 6.28; theta += THETA_SPACING){
         float xCylinder = CylinderX(theta);
         float yCylinder = CylinderY(theta);
-        float RotateCos = cos(A);
-        float RotateSin = sin(A);
 
         for(float l = (-LENGHT / 2.0); l < (LENGHT/2.0); l += 0.07){
-            float x = xCylinder * RotateCos - l * RotateSin;
-            float y = yCylinder; // ja que a altura nao se altera
-            float z = xCylinder * RotateSin + l * RotateCos;
+            float x = xCylinder;
+            float y = yCylinder; 
+            float z = l;
 
-            // noção de profundidade, projecao
+            // rotações
+            ROTATE_X(x, y, z, A1);
+            ROTATE_Y(x, y, z, A2);
+            ROTATE_Z(x, y, z, A3);
+
+            // Projeção
             float D = 1.0/(z + CAM_DISTANCE);
             float xp = (int)(SCREEN_WIDHT/2.0 + SCALE * D * x);
-            float yp = (int)(SCREEN_HEIGHT/2.0 + SCALE/2.0 * D * y);
+            float yp = (int)(SCREEN_HEIGHT/2.0 + SCALE/2.0 * D * y + 2);
 
-            // vetor normal
-            float nx = cos(theta) * RotateCos;
-            float ny = sin(theta);
-            float nz = cos(theta) * RotateSin;
+            // Cálculo da normal
+            float nx = xCylinder / RADIUS; // tem que ser um vetor unitario
+            float ny = yCylinder / RADIUS;
+            float nz = 0;  // Para o cilindro, a normal z não depende de l, apenas da superfície lateral
 
-            // produto escalar com a direção para ver a intensidade
-            float l_normal = sqrt(nx * nx + ny * ny + nz * nz); // normalizar o vertor
-            float l_light = sqrt(ld[0]*ld[0] + ld[1]*ld[1] + ld[2] * ld[2]); // normaliza vetor luz
+            // as mesmas rotações à normal
+            ROTATE_X(nx, ny, nz, A1);
+            ROTATE_Y(nx, ny, nz, A2);
+            ROTATE_Z(nx, ny, nz, A3);
+
+            // normalizaçao normal
+            float l_normal = norm(nx, ny, nz);
+            nx /= l_normal;
+            ny /= l_normal;
+            nz /= l_normal;
+
+            // Iluminação
+            float l_light = norm(ld[0], ld[1], ld[2]); 
             float luminance = (nx * ld[0] + ny * ld[1] + nz * ld[2])/(l_normal * l_light);
 
-            int idx = (int)((luminance + 1)*5.5); // move o intervalo de [-1, 1] para [0, 2]
-                                                  // multiplica por 5.5 ja que temos 11 opções de iluminação
-            
+            int idx = (int)((luminance + 1)*5.5); // Mapeia a intensidade de iluminação
+
             int point = xp + SCREEN_WIDHT * yp;
             if(SCREEN_HEIGHT > yp && yp > 0 && SCREEN_WIDHT > xp && xp > 0 && D > z_buffer[point]){
                 z_buffer[point] = D;
@@ -85,15 +121,17 @@ void render(float A){
 }
 
 int main(){
-    float A = 0;
+    float A1 = 0, A2 = 0, A3 = 0;
     hide_cursor();
     while(1){
         reset_cursor();
-        render(A);
-        for(int i = 0; i<1761; i++){
+        render(A1, A2, A3);
+        for(int i = 0; i<=BUFFER_SIZE; i++){
             putchar(i % SCREEN_WIDHT ? buffer[i] : '\n');
         }
-        A += ROTATION_ANGLE;
-        usleep(30000);
+        A1 += ROTATION_ANGLE;
+        A2 += ROTATION_ANGLE / 2; // Diferentes velocidades para cada rotação
+        A3 += ROTATION_ANGLE / 3;
+        usleep(16000);
     }
 }
