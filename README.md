@@ -64,7 +64,7 @@ Renderiza um cilindro tridimensional.
   - Representado com precisão na projeção do terminal.  
 
 ### `vector.c`  
-Exibe vetores em 3D com uma perspectiva simples.  
+Exibe vetores em 2D com uma perspectiva simples.  
 - **Funcionalidade adicional**:  
   - Manipulação de vetores para diferentes direções.  
 
